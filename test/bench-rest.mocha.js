@@ -352,3 +352,28 @@ test('null flow throws error', function () {
 
 });
 
+test('cancellation', function (done) {
+  var flow = 'http://localhost:8000/makeError';
+  var runOptions = {
+    limit: 1,
+    iterations: 100
+  };
+  var cancelled = false,
+    doneCalled = false,
+    errors = 0;
+  var b = benchrest(flow, runOptions)
+    .on('error', function() {
+      ++errors;
+    })
+    .on('end', function(stats, errorCount) {
+      t.equal(errorCount, errors, 'Error count does not match.');
+      t.isTrue(errors < 100, errors + ' errors raised.');
+      t.isTrue(stats.main.meter.count < 100, stats.main.meter.count + ' requests made.');
+      done();
+    });
+  setTimeout(function() {
+    b.cancel();
+    cancelled = true;
+  }, 10);
+});
+
